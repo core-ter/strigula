@@ -51,11 +51,19 @@ class Transaction(BaseModel):
         ('repayment', 'Repayment'),
     ]
 
-    category = models.ForeignKey(DebtCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+from django.core.validators import MinValueValidator
+
+class Transaction(BaseModel):
+    TRANSACTION_TYPES = [
+        ('expense', 'Expense'),
+        ('repayment', 'Repayment'),
+    ]
+
+    category = models.ForeignKey(DebtCategory, on_delete=models.CASCADE, related_name='transactions')
     type = models.CharField(max_length=20, choices=TRANSACTION_TYPES, default='expense')
     payer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='paid_transactions')
     debtor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owed_transactions')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(1)])
     currency = models.CharField(max_length=3, default='HUF')
     description = models.TextField(blank=True)
 

@@ -37,6 +37,7 @@ class DebtCategorySerializer(serializers.ModelSerializer):
 class TransactionSerializer(serializers.ModelSerializer):
     payer_name = serializers.ReadOnlyField(source='payer.username')
     debtor_name = serializers.ReadOnlyField(source='debtor.username')
+    payer = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Transaction

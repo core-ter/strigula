@@ -6,7 +6,16 @@ function App() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [data, setData] = useState(null)
+  const [friends, setFriends] = useState([]) // Barátok listája
+  const [categories, setCategories] = useState([]) // Kategóriák
+  const [transactions, setTransactions] = useState([])
   const [error, setError] = useState('')
+
+  // Űrlap state
+  const [amount, setAmount] = useState('')
+  const [description, setDescription] = useState('')
+  const [debtor, setDebtor] = useState('') // Ki tartozik nekem?
+  const [category, setCategory] = useState('') // Melyik kategória?
 
   // Ha változik a token (pl. beléptünk), állítsuk be az Axios-t
   useEffect(() => {
@@ -52,6 +61,50 @@ function App() {
     axios.get('http://127.0.0.1:8000/api/users/')
       .then(res => setData(res.data))
       .catch(err => console.error("Nem sikerült az adatlekérés", err))
+
+    // Barátok lekérése (csak ők lehetnek partnerek)
+    axios.get('http://127.0.0.1:8000/api/users/friends/')
+      .then(res => setFriends(res.data))
+      .catch(err => console.error("Nem sikerült a barátok lekérése", err))
+
+    axios.get('http://127.0.0.1:8000/api/transactions/')
+      .then(res => setTransactions(res.data))
+      .catch(err => console.error("Nem sikerült a tranzakciók lekérése", err))
+
+    axios.get('http://127.0.0.1:8000/api/debt-categories/')
+      .then(res => setCategories(res.data))
+      .catch(err => console.error("Nem sikerült a kategóriák lekérése", err))
+  }
+
+  const handleTransactionSubmit = async (e) => {
+    e.preventDefault()
+    if (!amount || !debtor) {
+      alert("Kérlek add meg az összeget és válassz partnert!")
+      return
+    }
+
+    try {
+      await axios.post('http://127.0.0.1:8000/api/transactions/', {
+        amount: amount,
+        description: description,
+        debtor: debtor,
+        category: category || null,
+        type: 'expense', // Alapértelmezett típus
+        currency: 'HUF'
+      })
+
+      // Siker! Frissítjük a listát és ürítjük az űrlapot
+      alert("Tranzakció sikeresen rögzítve!")
+      setAmount('')
+      setDescription('')
+      setDebtor('')
+      setCategory('')
+      fetchProtectedData() // Újratöltés
+
+    } catch (err) {
+      console.error(err)
+      alert("Hiba történt a mentéskor!")
+    }
   }
 
   // --- MEGJELENÍTÉS ---
@@ -106,6 +159,59 @@ function App() {
         </ul>
       ) : (
         <p>Adatok betöltése...</p>
+      )}
+
+      <hr style={{ margin: '30px 0' }} />
+
+      <h3>Új Tranzakció Rögzítése:</h3>
+      <form onSubmit={handleTransactionSubmit} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px', padding: '15px', border: '1px solid #ccc', borderRadius: '8px' }}>
+        <input
+          type="number"
+          min="1"
+          placeholder="Összeg (Ft)"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          style={{ padding: '8px' }}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Leírás"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          style={{ padding: '8px' }}
+        />
+
+        <select value={debtor} onChange={e => setDebtor(e.target.value)} style={{ padding: '8px' }} required>
+          <option value="">-- Ki tartozik neked? --</option>
+          {friends.map(user => (
+            <option key={user.id} value={user.id}>{user.username}</option>
+          ))}
+        </select>
+
+        <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '8px' }}>
+          <option value="">-- Kategória (Opcionális) --</option>
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.id}>{cat.name}</option>
+          ))}
+        </select>
+
+        <button type="submit" style={{ padding: '8px 16px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+          Hozzáadás
+        </button>
+      </form>
+
+      <h3>Tranzakciók (Backendről):</h3>
+      {transactions.length > 0 ? (
+        <ul>
+          {transactions.map(tx => (
+            <li key={tx.id}>
+              {tx.debtor_name} tartozik {tx.payer_name}-nek: <strong>{tx.amount} {tx.currency}</strong> ({tx.description})
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Nincs tranzakció.</p>
       )}
     </div>
   )
