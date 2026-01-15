@@ -8,16 +8,12 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 class FriendRequestSerializer(serializers.ModelSerializer):
-    from_user = UserSerializer(read_only=True)
-    to_user = UserSerializer(read_only=True)
-    to_user_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), source='to_user', write_only=True
-    )
+    from_user_name = serializers.ReadOnlyField(source='from_user.username')
 
     class Meta:
         model = FriendRequest
-        fields = ['id', 'from_user', 'to_user', 'to_user_id', 'created_at', 'deleted_at']
-        read_only_fields = ['created_at', 'deleted_at']
+        fields = ['id', 'from_user', 'from_user_name', 'to_user', 'created_at', 'deleted_at']
+        read_only_fields = ['created_at', 'deleted_at', 'from_user']
 
 class FriendshipSerializer(serializers.ModelSerializer):
     user1 = UserSerializer(read_only=True)
