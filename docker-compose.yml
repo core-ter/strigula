@@ -44,6 +44,7 @@ services:
         container_name: strigula_frontend
         ports:
             - "5173:5173"
+            - "4173:4173"
         volumes:
             - ./frontend:/app
             - /app/node_modules

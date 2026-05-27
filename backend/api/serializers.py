@@ -5,7 +5,7 @@ from .models import FriendRequest, Friendship, DebtCategory, Transaction
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = ['id', 'username', 'first_name', 'last_name']
         read_only_fields = ['id', 'username']
 
 class FriendRequestSerializer(serializers.ModelSerializer):

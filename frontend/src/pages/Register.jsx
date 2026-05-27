@@ -6,7 +6,6 @@ const API_URL = import.meta.env.VITE_API_URL
 
 function Register() {
   const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [error, setError] = useState('')
@@ -26,7 +25,6 @@ function Register() {
     try {
       await axios.post(`${API_URL}/auth/users/`, {
         username: username,
-        email: email,
         password: password
       })
       setSuccess('Sikeres regisztráció! Átirányítás a belépéshez...')
@@ -64,15 +62,7 @@ function Register() {
             placeholder="Felhasználónév"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
-          <input
-            type="email"
-            placeholder="E-mail"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -80,7 +70,7 @@ function Register() {
             placeholder="Jelszó"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -88,7 +78,7 @@ function Register() {
             placeholder="Jelszó megerősítése"
             value={passwordConfirm}
             onChange={e => setPasswordConfirm(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl font-bold transition-colors">
@@ -97,7 +87,7 @@ function Register() {
         </form>
         {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-          Már van fiókod? <Link to="/login" className="text-blue-600 hover:underline">Jelentkezz be</Link>
+          Már van fiókod? <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Jelentkezz be</Link>
         </p>
       </div>
     </div>

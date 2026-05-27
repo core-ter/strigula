@@ -77,20 +77,26 @@ function Friends() {
     return { totalPaidByMe: paid, totalPaidToMe: received, netBalance: paid - received }
   }, [transactions, currentUser])
 
-  const handleSearch = async () => {
-    if (!searchQuery) return
-    try {
-      const res = await axios.get(`${API_URL}/api/users/search/?query=${searchQuery}`)
-      setSearchResults(res.data)
-    } catch (err) {
-      console.error(err)
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      return
     }
-  }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/users/search/?query=${searchQuery}`)
+        setSearchResults(res.data)
+      } catch (err) {
+        console.error(err)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const sendRequest = async (targetUserId) => {
     try {
       await axios.post(`${API_URL}/api/friend-requests/`, { to_user: targetUserId })
-      handleSearch()
+      setSearchResults(prev => prev.filter(u => u.id !== targetUserId))
       fetchData()
     } catch (err) {
       console.error(err)
@@ -135,7 +141,7 @@ function Friends() {
       <div className="text-center mb-6">
         <p className="text-xs font-medium text-gray-400 tracking-widest uppercase">Teljes egyenleg</p>
         <p className={`text-4xl sm:text-5xl font-black tracking-tight mt-1 ${
-          netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-500' : 'text-gray-800'
+          netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-500' : 'text-gray-800 dark:text-white'
         }`}>
           {netBalance >= 0 ? '+' : '-'}{Math.abs(netBalance).toLocaleString()}
           <span className="text-2xl sm:text-3xl font-bold text-gray-400 ml-1">Ft</span>
@@ -162,7 +168,7 @@ function Friends() {
 
       {/* Incoming Friend Requests */}
       {incomingRequests.length > 0 && (
-        <div className="mb-6 bg-orange-50 border border-orange-200 rounded-2xl p-5">
+        <div className="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-2xl p-5">
           <h2 className="text-sm font-bold text-orange-600 mb-3 flex items-center gap-2">
             <span className="bg-orange-500 text-white text-xs rounded-full w-5 h-5 inline-flex items-center justify-center">
               {incomingRequests.length}
@@ -171,18 +177,18 @@ function Friends() {
           </h2>
           <ul className="space-y-2">
             {incomingRequests.map(req => (
-              <li key={req.id} className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm">
-                <span className="font-medium text-gray-800 text-sm">{req.from_user_name}</span>
+              <li key={req.id} className="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm">
+                <span className="font-medium text-gray-800 dark:text-white text-sm">{req.from_user_name}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => acceptRequest(req.id, req.from_user)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-600 transition-colors"
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-green-600 dark:hover:bg-green-500 transition-colors"
                   >
                     Elfogad
                   </button>
                   <button
                     onClick={() => rejectRequest(req.id)}
-                    className="bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-300 transition-colors"
+                    className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
                     Elutasít
                   </button>
@@ -217,24 +223,17 @@ function Friends() {
               placeholder="Felhasználónév keresése..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
               className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button
-              onClick={handleSearch}
-              className="bg-blue-600 text-white px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shrink-0"
-            >
-              Keresés
-            </button>
           </div>
           {searchResults.length > 0 && (
             <ul className="mt-4 space-y-2">
               {searchResults.map(user => (
-                <li key={user.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                  <span className="text-sm font-medium text-gray-800">{user.username}</span>
+                <li key={user.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <span className="text-sm font-medium text-gray-800 dark:text-white">{user.username}</span>
                   <button
                     onClick={() => sendRequest(user.id)}
-                    className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 transition-colors"
+                    className="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
                   >
                     Jelölés
                   </button>
@@ -285,13 +284,13 @@ function Friends() {
         </div>
       ) : (
         <div className="text-center py-16">
-          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <p className="text-gray-400 font-medium">Még nincsenek barátaid</p>
-          <p className="text-gray-300 text-sm mt-1">Keress és jelölj be valakit a fenti gombbal!</p>
+          <p className="text-gray-400 dark:text-gray-500 font-medium">Még nincsenek barátaid</p>
+          <p className="text-gray-300 dark:text-gray-600 text-sm mt-1">Keress és jelölj be valakit a fenti gombbal!</p>
         </div>
       )}
         </>

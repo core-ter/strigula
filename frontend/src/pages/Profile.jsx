@@ -9,7 +9,6 @@ function Profile() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -33,7 +32,6 @@ function Profile() {
     axios.get(`${API_URL}/auth/users/me/`)
       .then(res => {
         setUser(res.data)
-        setEmail(res.data.email || '')
         setFirstName(res.data.first_name || '')
         setLastName(res.data.last_name || '')
       })
@@ -46,7 +44,6 @@ function Profile() {
     setSaving(true)
     try {
       await axios.patch(`${API_URL}/auth/users/me/`, {
-        email,
         first_name: firstName,
         last_name: lastName
       })
@@ -125,15 +122,6 @@ function Profile() {
               value={user?.username || ''}
               disabled
               className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-500 dark:text-gray-400 cursor-not-allowed"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1 ml-1">E-mail</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

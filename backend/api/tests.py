@@ -26,7 +26,6 @@ class UserRegistrationTests(APITestCase):
         })
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['username'], 'newuser')
-        self.assertEqual(response.data['email'], 'newuser@example.com')
         self.assertTrue(User.objects.filter(username='newuser').exists())
 
     def test_register_duplicate_username_fails(self):

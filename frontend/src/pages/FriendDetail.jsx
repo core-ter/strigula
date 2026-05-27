@@ -26,6 +26,7 @@ function FriendDetail() {
   const [txTypes, setTxTypes] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showFriendMenu, setShowFriendMenu] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -171,6 +172,19 @@ function FriendDetail() {
     }
   }
 
+  const handleDeleteCategory = async (catId) => {
+    if (!confirm('Biztosan törlöd a kategóriát? A benne lévő tranzakciók megmaradnak.')) return
+    try {
+      await axios.delete(`${API_URL}/api/debt-categories/${catId}/`)
+      setLoading(true)
+      fetchData()
+      toast('Kategória törölve.', 'success')
+    } catch (err) {
+      console.error(err)
+      toast('Hiba a kategória törlésekor!', 'error')
+    }
+  }
+
   const handleUnfriend = async () => {
     if (!friendshipId) return
     if (!confirm('Biztosan törlöd ezt a barátot? Minden közös tranzakció megmarad.')) return
@@ -248,7 +262,7 @@ function FriendDetail() {
   if (!friend && !loading && !error) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-8 text-center py-16">
-        <p className="text-gray-400">Ez a barát nem található.</p>
+        <p className="text-gray-400 dark:text-gray-500">Ez a barát nem található.</p>
       </div>
     )
   }
@@ -267,7 +281,7 @@ function FriendDetail() {
       {/* Back Button */}
       <button
         onClick={() => navigate('/dashboard')}
-        className="mb-4 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="mb-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -285,12 +299,31 @@ function FriendDetail() {
             <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">{friend.username}</h1>
             <p className="text-sm text-gray-400 dark:text-gray-500">{totalTxCount} tranzakció</p>
           </div>
-          <button
-            onClick={handleUnfriend}
-            className="text-xs font-medium text-gray-400 hover:text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0"
-          >
-            Barát törlése
-          </button>
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowFriendMenu(!showFriendMenu)}
+              className="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+            {showFriendMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowFriendMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 z-20 py-1">
+                  <button
+                    onClick={() => { setShowFriendMenu(false); handleUnfriend() }}
+                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  >
+                    Barát törlése
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Two-Way Balance Bar */}
@@ -357,8 +390,8 @@ function FriendDetail() {
             onClick={() => setShowCategoryForm(!showCategoryForm)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
               showCategoryForm
-                ? 'bg-gray-200 text-gray-600'
-                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800'
             }`}
           >
             {showCategoryForm ? 'Mégse' : '+ Új'}
@@ -395,11 +428,11 @@ function FriendDetail() {
             return (
               <div key={cat.id} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 {/* Accordion Header */}
-                <button
-                  onClick={() => toggleCategory(cat.id)}
-                  className="w-full p-5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="text-left">
+                <div className="p-5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <button
+                    onClick={() => toggleCategory(cat.id)}
+                    className="text-left flex-1 min-w-0"
+                  >
                     <h3 className="font-bold text-gray-900 dark:text-white">{cat.name}</h3>
                     {cat.description && (
                       <p className="text-xs text-gray-400 mt-0.5">{cat.description}</p>
@@ -407,14 +440,25 @@ function FriendDetail() {
                     <p className="text-xs text-gray-400 mt-1">
                       {catTxs.length} tranzakció — összesen {catTxs.reduce((s, tx) => s + parseFloat(tx.amount), 0).toLocaleString()} Ft
                     </p>
+                  </button>
+                  <div className="flex items-center gap-1 shrink-0 ml-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id) }}
+                      className="text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                      title="Kategória törlése"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                    <svg
+                      className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
-                  <svg
-                    className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                </div>
 
                 {/* Accordion Content */}
                 {isOpen && (
@@ -530,9 +574,9 @@ function FriendDetail() {
             )
           })
         ) : (
-          <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-            <p className="text-gray-400 font-medium">Még nincs kategória</p>
-            <p className="text-gray-300 text-sm mt-1">Hozz létre egyet a fenti gombbal!</p>
+          <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+            <p className="text-gray-400 dark:text-gray-500 font-medium">Még nincs kategória</p>
+            <p className="text-gray-300 dark:text-gray-600 text-sm mt-1">Hozz létre egyet a fenti gombbal!</p>
           </div>
         )}
       </div>
