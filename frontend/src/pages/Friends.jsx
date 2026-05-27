@@ -143,7 +143,7 @@ function Friends() {
       </div>
 
       {/* Split Stats Card */}
-      <div className="bg-white rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden mb-8 flex divide-x divide-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg shadow-gray-200/50 dark:shadow-black/20 border border-gray-100 dark:border-gray-800 overflow-hidden mb-8 flex divide-x divide-gray-100 dark:divide-gray-800">
         <div className="flex-1 p-5 sm:p-6">
           <p className="text-xs font-medium text-gray-400 mb-1.5">Kiadásaid</p>
           <p className="text-xl sm:text-2xl font-extrabold text-green-600 tracking-tight">
@@ -195,7 +195,7 @@ function Friends() {
 
       {/* Header with Search Toggle */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-800">Barátaid</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Barátaid</h2>
         <button
           onClick={() => setShowSearch(!showSearch)}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
@@ -210,7 +210,7 @@ function Friends() {
 
       {/* Search Section */}
       {showSearch && (
-        <div className="bg-white p-5 rounded-2xl shadow-sm mb-6 border border-gray-100">
+        <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm mb-6 border border-gray-100 dark:border-gray-800">
           <div className="flex gap-2">
             <input
               type="text"
@@ -218,7 +218,7 @@ function Friends() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               onClick={handleSearch}
@@ -257,14 +257,14 @@ function Friends() {
               <button
                 key={user.id}
                 onClick={() => navigate(`/friend/${user.id}`)}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-left hover:shadow-md hover:border-blue-200 transition-all group"
+                className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 text-left hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500 transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
                     {user.username.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 truncate">{user.username}</p>
+                    <p className="font-bold text-gray-900 dark:text-white truncate">{user.username}</p>
                     <p className={`text-sm font-semibold mt-0.5 ${
                       balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-500' : 'text-gray-400'
                     }`}>

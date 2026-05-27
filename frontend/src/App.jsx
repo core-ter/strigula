@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import axios from 'axios'
+import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -25,6 +26,7 @@ function App() {
   }
 
   return (
+    <ThemeProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to={token ? "/dashboard" : "/login"} />} />
@@ -42,6 +44,7 @@ function App() {
       </Routes>
       <ToastContainer />
     </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

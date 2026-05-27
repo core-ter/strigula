@@ -31,29 +31,29 @@ function Login({ setToken }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Strigula Bejelentkezés</h1>
+      <div className="w-full max-w-sm bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Strigula Bejelentkezés</h1>
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <input
             type="text"
             placeholder="Felhasználónév"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="password"
             placeholder="Jelszó"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold transition-colors">
             Belépés
           </button>
         </form>
         {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
-        <p className="text-center text-sm text-gray-500 mt-4">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
           Nincs még fiókod? <Link to="/register" className="text-blue-600 hover:underline">Regisztrálj itt</Link>
         </p>
       </div>

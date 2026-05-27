@@ -46,8 +46,8 @@ function Register() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Regisztráció</h1>
+        <div className="w-full max-w-sm bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Regisztráció</h1>
           <p className="text-green-600 font-medium">{success}</p>
         </div>
       </div>
@@ -56,8 +56,8 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Regisztráció</h1>
+      <div className="w-full max-w-sm bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">Regisztráció</h1>
         <form onSubmit={handleRegister} className="flex flex-col gap-4">
           <input
             type="text"
@@ -96,7 +96,7 @@ function Register() {
           </button>
         </form>
         {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
-        <p className="text-center text-sm text-gray-500 mt-4">
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
           Már van fiókod? <Link to="/login" className="text-blue-600 hover:underline">Jelentkezz be</Link>
         </p>
       </div>

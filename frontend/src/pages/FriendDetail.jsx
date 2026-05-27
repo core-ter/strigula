@@ -213,6 +213,38 @@ function FriendDetail() {
     return filteredTransactions.filter(tx => tx.category === catId)
   }
 
+  const groupTransactionsByDate = (txs) => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const yesterday = new Date(today.getTime() - 86400000)
+    const thisWeekStart = new Date(today.getTime() - today.getDay() * 86400000)
+    const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * 86400000)
+
+    const groups = [
+      { label: 'Ma', test: d => d >= today },
+      { label: 'Tegnap', test: d => d >= yesterday && d < today },
+      { label: 'Ezen a héten', test: d => d >= thisWeekStart && d < yesterday },
+      { label: 'Múlt héten', test: d => d >= lastWeekStart && d < thisWeekStart },
+      { label: 'Korábban', test: () => true },
+    ]
+
+    const result = []
+    const remaining = [...txs].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    groups.forEach(({ label, test }) => {
+      const matching = remaining.filter(tx => test(new Date(tx.created_at)))
+      if (matching.length > 0) {
+        result.push({ label, transactions: matching })
+        matching.forEach(tx => {
+          const idx = remaining.findIndex(r => r.id === tx.id)
+          if (idx !== -1) remaining.splice(idx, 1)
+        })
+      }
+    })
+
+    return result
+  }
+
   if (!friend && !loading && !error) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-8 text-center py-16">
@@ -244,14 +276,14 @@ function FriendDetail() {
       </button>
 
       {/* Friend Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-6">
         <div className="flex items-center gap-4 mb-1">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
             {friend.username.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-extrabold text-gray-900">{friend.username}</h1>
-            <p className="text-sm text-gray-400">{totalTxCount} tranzakció</p>
+            <h1 className="text-xl font-extrabold text-gray-900 dark:text-white">{friend.username}</h1>
+            <p className="text-sm text-gray-400 dark:text-gray-500">{totalTxCount} tranzakció</p>
           </div>
           <button
             onClick={handleUnfriend}
@@ -274,7 +306,7 @@ function FriendDetail() {
             </div>
           </div>
 
-          <div className="h-4 bg-gray-100 rounded-full overflow-hidden flex">
+          <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
             <div className="w-1/2 flex justify-end">
               <div
                 className="h-full bg-red-500 rounded-l-full transition-all duration-300"
@@ -320,7 +352,7 @@ function FriendDetail() {
       {/* Categories Accordion */}
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-800">Kategóriák</h2>
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white">Kategóriák</h2>
           <button
             onClick={() => setShowCategoryForm(!showCategoryForm)}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
@@ -335,14 +367,14 @@ function FriendDetail() {
 
         {/* New Category Form */}
         {showCategoryForm && (
-          <form onSubmit={handleCreateCategory} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+          <form onSubmit={handleCreateCategory} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 placeholder="Kategória neve (pl. kaja, rezsi)..."
                 value={catName}
                 onChange={e => setCatName(e.target.value)}
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-gray-50 dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
               <button
@@ -361,14 +393,14 @@ function FriendDetail() {
             const isOpen = openCategories[cat.id]
 
             return (
-              <div key={cat.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div key={cat.id} className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
                 {/* Accordion Header */}
                 <button
                   onClick={() => toggleCategory(cat.id)}
-                  className="w-full p-5 flex justify-between items-center hover:bg-gray-50 transition-colors"
+                  className="w-full p-5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="text-left">
-                    <h3 className="font-bold text-gray-900">{cat.name}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white">{cat.name}</h3>
                     {cat.description && (
                       <p className="text-xs text-gray-400 mt-0.5">{cat.description}</p>
                     )}
@@ -386,55 +418,64 @@ function FriendDetail() {
 
                 {/* Accordion Content */}
                 {isOpen && (
-                  <div className="border-t border-gray-100 px-5 pb-5">
+                  <div className="border-t border-gray-100 dark:border-gray-800 px-5 pb-5">
                     {/* Transactions List */}
                     {catTxs.length > 0 ? (
-                      <ul className="space-y-2 mt-4">
-                        {catTxs.map(tx => {
-                          const isCredit = tx.payer === currentUser?.id
-                          return (
-                            <li
-                              key={tx.id}
-                              className={`flex justify-between items-center p-3 rounded-xl ${
-                                isCredit ? 'bg-green-50' : 'bg-red-50'
-                              }`}
-                            >
-                              <div>
-                                <p className={`text-sm font-bold ${isCredit ? 'text-green-700' : 'text-red-700'}`}>
-                                  {isCredit ? 'Kifizetve' : 'Tartozás'}
-                                </p>
-                                {tx.description && (
-                                  <p className="text-xs text-gray-500 mt-0.5">{tx.description}</p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <p className={`text-sm font-bold ${isCredit ? 'text-green-600' : 'text-red-500'}`}>
-                                  {isCredit ? '+' : '-'}{parseFloat(tx.amount).toLocaleString()} Ft
-                                </p>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteTransaction(tx.id) }}
-                                  className="text-gray-300 hover:text-red-500 transition-colors p-1"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </li>
-                          )
-                        })}
-                      </ul>
+                      <div className="space-y-4 mt-4">
+                        {groupTransactionsByDate(catTxs).map(group => (
+                          <div key={group.label}>
+                            <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 px-1">
+                              {group.label}
+                            </h4>
+                            <ul className="space-y-2">
+                              {group.transactions.map(tx => {
+                                const isCredit = tx.payer === currentUser?.id
+                                return (
+                                  <li
+                                    key={tx.id}
+                                    className={`flex justify-between items-center p-3 rounded-xl ${
+                                      isCredit ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'
+                                    }`}
+                                  >
+                                    <div>
+                                      <p className={`text-sm font-bold ${isCredit ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                                        {isCredit ? 'Kifizetve' : 'Tartozás'}
+                                      </p>
+                                      {tx.description && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tx.description}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <p className={`text-sm font-bold ${isCredit ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                                        {isCredit ? '+' : '-'}{parseFloat(tx.amount).toLocaleString()} Ft
+                                      </p>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteTransaction(tx.id) }}
+                                        className="text-gray-300 dark:text-gray-600 hover:text-red-500 transition-colors p-1"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <p className="text-gray-400 text-sm text-center mt-4">Nincs tranzakció</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm text-center mt-4">Nincs tranzakció</p>
                     )}
 
                     {/* New Transaction Form */}
                     <form
                       onSubmit={(e) => handleCreateTransaction(e, cat.id)}
-                      className="mt-4 bg-gray-50 rounded-xl p-4 space-y-3"
+                      className="mt-4 bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-3"
                     >
                       {/* Type Toggle */}
-                      <div className="flex bg-white rounded-xl border border-gray-200 p-1 gap-1">
+                      <div className="flex bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-1 gap-1">
                         <button
                           type="button"
                           onClick={() => setTxTypes(prev => ({ ...prev, [cat.id]: 'expense' }))}
@@ -465,7 +506,7 @@ function FriendDetail() {
                           placeholder="Összeg"
                           value={txAmounts[cat.id] || ''}
                           onChange={e => setTxAmounts(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                          className="sm:w-28 w-full bg-white border border-gray-200 rounded-xl px-3 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="sm:w-28 w-full bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
                         <input
@@ -473,7 +514,7 @@ function FriendDetail() {
                           placeholder="Leírás..."
                           value={txDescriptions[cat.id] || ''}
                           onChange={e => setTxDescriptions(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                          className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 bg-white dark:bg-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <button
                           type="submit"

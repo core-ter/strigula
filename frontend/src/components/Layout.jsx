@@ -1,29 +1,29 @@
 import { Outlet, NavLink } from 'react-router-dom'
 
 function Layout({ handleLogout }) {
-  const linkClass = ({ isActive }) =>
-    `flex flex-col items-center gap-1 px-4 py-3 rounded-xl text-xs font-medium transition-colors ${
-      isActive
-        ? 'text-blue-600 bg-blue-50'
-        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-    }`
-
   const sidebarLinkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
       isActive
-        ? 'text-blue-600 bg-blue-50'
-        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+        ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400'
+        : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+    }`
+
+  const linkClass = ({ isActive }) =>
+    `flex flex-col items-center gap-1 px-4 py-3 rounded-xl text-xs font-medium transition-colors ${
+      isActive
+        ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400'
+        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
     }`
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-56 md:bg-white md:shadow-lg md:z-30">
+      <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-56 md:bg-white md:dark:bg-gray-900 md:shadow-lg md:z-30">
         <div className="px-6 py-6">
-          <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight">
             Strigula
           </h1>
-          <p className="text-xs text-gray-400 mt-1">Tartozás nyilvántartó</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tartozás nyilvántartó</p>
         </div>
         <nav className="flex-1 px-3 space-y-1">
           <NavLink to="/dashboard" className={sidebarLinkClass}>
@@ -55,10 +55,10 @@ function Layout({ handleLogout }) {
       {/* Main Content */}
       <main className="md:ml-56 pb-24 md:pb-0 min-h-screen">
         {/* Mobile Header */}
-        <header className="md:hidden bg-white shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+        <header className="md:hidden bg-white dark:bg-gray-900 shadow-sm px-4 py-3 flex items-center justify-between sticky top-0 z-20">
           <div>
-            <h1 className="text-lg font-extrabold text-gray-900 tracking-tight">Strigula</h1>
-            <p className="text-xs text-gray-400">Tartozás nyilvántartó</p>
+            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">Strigula</h1>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Tartozás nyilvántartó</p>
           </div>
         </header>
 
@@ -68,7 +68,7 @@ function Layout({ handleLogout }) {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 z-30 flex justify-around py-2 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-30 flex justify-around py-2 safe-area-bottom">
         <NavLink to="/dashboard" className={linkClass}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
