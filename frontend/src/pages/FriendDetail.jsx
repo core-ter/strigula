@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { LoadingSpinner, ErrorBanner } from '../components/LoadingSpinner'
+import { toast } from '../components/Toast'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -83,10 +84,13 @@ function FriendDetail() {
   const balance = useMemo(() => {
     let bal = 0
     filteredTransactions.forEach(tx => {
-      if (tx.payer === currentUser?.id) {
-        bal += parseFloat(tx.amount)
+      const amt = parseFloat(tx.amount)
+      if (tx.type === 'repayment') {
+        if (tx.payer === currentUser?.id) bal -= amt
+        else bal += amt
       } else {
-        bal -= parseFloat(tx.amount)
+        if (tx.payer === currentUser?.id) bal += amt
+        else bal -= amt
       }
     })
     return bal
@@ -122,7 +126,7 @@ function FriendDetail() {
       fetchData()
     } catch (err) {
       console.error(err)
-      alert('Hiba a kategória létrehozásakor!')
+      toast('Hiba a kategória létrehozásakor!', 'error')
     }
   }
 
@@ -132,7 +136,7 @@ function FriendDetail() {
     const description = txDescriptions[categoryId] || ''
     const txType = txTypes[categoryId] || 'expense'
     if (!amount) {
-      alert('Add meg az összeget!')
+      toast('Add meg az összeget!', 'error')
       return
     }
     try {
@@ -150,7 +154,7 @@ function FriendDetail() {
       fetchData()
     } catch (err) {
       console.error(err)
-      alert('Hiba a tranzakció létrehozásakor!')
+      toast('Hiba a tranzakció létrehozásakor!', 'error')
     }
   }
 
@@ -160,9 +164,10 @@ function FriendDetail() {
       await axios.delete(`${API_URL}/api/transactions/${txId}/`)
       setLoading(true)
       fetchData()
+      toast('Tranzakció törölve.', 'success')
     } catch (err) {
       console.error(err)
-      alert('Hiba a törléskor!')
+      toast('Hiba a törléskor!', 'error')
     }
   }
 
@@ -172,9 +177,35 @@ function FriendDetail() {
     try {
       await axios.delete(`${API_URL}/api/friendships/${friendshipId}/`)
       navigate('/dashboard')
+      toast('Barát törölve.', 'success')
     } catch (err) {
       console.error(err)
-      alert('Hiba a barát törlésekor!')
+      toast('Hiba a barát törlésekor!', 'error')
+    }
+  }
+
+  const handleSettleUp = async () => {
+    const absBal = Math.abs(balance)
+    if (absBal < 1) return toast('Nincs mit rendezni!', 'info')
+    const label = balance > 0 ? 'tartozik neked' : 'tartozol neki'
+    if (!confirm(`Biztosan rögzíted a rendezést? (${absBal.toLocaleString()} Ft ${label})`)) return
+
+    const defaultCat = filteredCategories.length > 0 ? filteredCategories[0].id : null
+    try {
+      await axios.post(`${API_URL}/api/transactions/`, {
+        amount: absBal,
+        debtor: parseInt(friendId),
+        category: defaultCat,
+        type: 'repayment',
+        currency: 'HUF',
+        description: 'Rendezés'
+      })
+      setLoading(true)
+      fetchData()
+      toast('Rendezés rögzítve!', 'success')
+    } catch (err) {
+      console.error(err)
+      toast('Hiba a rendezéskor!', 'error')
     }
   }
 
@@ -268,6 +299,21 @@ function FriendDetail() {
               ? `Tartozol neki: -${Math.abs(balance).toLocaleString()} Ft`
               : 'Rendezve ✓'}
           </p>
+
+          {balance !== 0 && (
+            <button
+              onClick={handleSettleUp}
+              className={`mt-4 w-full text-white px-6 py-3 rounded-xl text-sm font-semibold transition-all shadow-sm active:scale-[0.98] ${
+                balance < 0
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-500 active:from-indigo-600 active:to-purple-600'
+                  : 'bg-emerald-600 active:bg-emerald-700'
+              }`}
+            >
+              {balance < 0
+                ? `Kifizetem (${Math.abs(balance).toLocaleString()} Ft)`
+                : `Pénz átvéve (${Math.abs(balance).toLocaleString()} Ft)`}
+            </button>
+          )}
         </div>
       </div>
 

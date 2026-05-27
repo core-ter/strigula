@@ -6,6 +6,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Friends from './pages/Friends'
 import FriendDetail from './pages/FriendDetail'
+import Profile from './pages/Profile'
+import { ToastContainer } from './components/Toast'
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'))
@@ -35,8 +37,10 @@ function App() {
         <Route element={token ? <Layout handleLogout={handleLogout} /> : <Navigate to="/login" />}>
           <Route path="/dashboard" element={<Friends />} />
           <Route path="/friend/:id" element={<FriendDetail />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
       </Routes>
+      <ToastContainer />
     </BrowserRouter>
   )
 }

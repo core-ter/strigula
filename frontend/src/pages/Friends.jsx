@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { LoadingSpinner, ErrorBanner } from '../components/LoadingSpinner'
+import { toast } from '../components/Toast'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -52,10 +53,14 @@ function Friends() {
     if (!currentUser) return {}
     const bal = {}
     transactions.forEach(tx => {
-      if (tx.payer === currentUser.id) {
-        bal[tx.debtor] = (bal[tx.debtor] || 0) + parseFloat(tx.amount)
-      } else if (tx.debtor === currentUser.id) {
-        bal[tx.payer] = (bal[tx.payer] || 0) - parseFloat(tx.amount)
+      const amt = parseFloat(tx.amount)
+      const partner = tx.payer === currentUser.id ? tx.debtor : tx.payer
+      if (tx.type === 'repayment') {
+        if (tx.payer === currentUser.id) bal[partner] = (bal[partner] || 0) - amt
+        else bal[partner] = (bal[partner] || 0) + amt
+      } else {
+        if (tx.payer === currentUser.id) bal[partner] = (bal[partner] || 0) + amt
+        else bal[partner] = (bal[partner] || 0) - amt
       }
     })
     return bal
@@ -89,7 +94,7 @@ function Friends() {
       fetchData()
     } catch (err) {
       console.error(err)
-      alert('Hiba a kérés küldésekor!')
+      toast('Hiba a kérés küldésekor!', 'error')
     }
   }
 
@@ -103,7 +108,7 @@ function Friends() {
       fetchData()
     } catch (err) {
       console.error(err)
-      alert('Hiba az elfogadáskor!')
+      toast('Hiba az elfogadáskor!', 'error')
     }
   }
 
