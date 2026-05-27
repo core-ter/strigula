@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import CheckConstraint, Q
@@ -44,14 +45,6 @@ class DebtCategory(BaseModel):
 
     def __str__(self):
         return self.name
-
-class Transaction(BaseModel):
-    TRANSACTION_TYPES = [
-        ('expense', 'Expense'),
-        ('repayment', 'Repayment'),
-    ]
-
-from django.core.validators import MinValueValidator
 
 class Transaction(BaseModel):
     TRANSACTION_TYPES = [

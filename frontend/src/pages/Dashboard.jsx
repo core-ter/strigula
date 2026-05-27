@@ -1,10 +1,14 @@
 import { useEffect, useState, useMemo } from 'react'
 import axios from 'axios'
+import Categories from './Categories'
+
+const API_URL = import.meta.env.VITE_API_URL
 
 function Dashboard({ handleLogout, token }) {
     const [currentUser, setCurrentUser] = useState(null)
     const [friends, setFriends] = useState([])
     const [categories, setCategories] = useState([])
+    const [friendships, setFriendships] = useState([])
     const [transactions, setTransactions] = useState([])
 
     // Search & Requests State
@@ -26,11 +30,11 @@ function Dashboard({ handleLogout, token }) {
     }, [token])
 
     const fetchProtectedData = () => {
-        axios.get('http://127.0.0.1:8000/auth/users/me/')
+        axios.get(`${API_URL}/auth/users/me/`)
             .then(res => setCurrentUser(res.data))
             .catch(err => console.error("Nem sikerült a user lekérése", err))
 
-        axios.get('http://127.0.0.1:8000/api/users/friends/')
+        axios.get(`${API_URL}/api/users/friends/`)
             .then(res => setFriends(res.data))
             .catch(err => console.error("Nem sikerült a barátok lekérése", err))
 
@@ -41,7 +45,7 @@ function Dashboard({ handleLogout, token }) {
         // Wait, implementation plan says: "Exclude users with pending requests".
         // And "Accept -> request disappears, user appears in friends".
         // So FriendRequest model IS the pending state.
-        axios.get('http://127.0.0.1:8000/api/friend-requests/')
+        axios.get(`${API_URL}/api/friend-requests/`)
             .then(res => {
                 // Filter for requests sent TO me
                 // NOTE: backend filters: Q(from_user=user) | Q(to_user=user).
@@ -53,17 +57,21 @@ function Dashboard({ handleLogout, token }) {
                 // Let's just set raw data and filter in render or wait.
                 // Actually, let's just use the serializer's `to_user` field if available.
                 // Better strategy: Filter by checking if I am NOT the `from_user`.
-                setRequests(res.data)
+                setRequests(res.data.results)
             })
             .catch(err => console.error("Nem sikerült a kérések lekérése", err))
 
-        axios.get('http://127.0.0.1:8000/api/transactions/')
-            .then(res => setTransactions(res.data))
+        axios.get(`${API_URL}/api/transactions/`)
+            .then(res => setTransactions(res.data.results))
             .catch(err => console.error("Nem sikerült a tranzakciók lekérése", err))
 
-        axios.get('http://127.0.0.1:8000/api/debt-categories/')
-            .then(res => setCategories(res.data))
+        axios.get(`${API_URL}/api/debt-categories/`)
+            .then(res => setCategories(res.data.results))
             .catch(err => console.error("Nem sikerült a kategóriák lekérése", err))
+
+        axios.get(`${API_URL}/api/friendships/`)
+            .then(res => setFriendships(res.data.results))
+            .catch(err => console.error("Nem sikerült a barátságok lekérése", err))
     }
 
     const balances = useMemo(() => {
@@ -90,7 +98,7 @@ function Dashboard({ handleLogout, token }) {
             return
         }
         try {
-            await axios.post('http://127.0.0.1:8000/api/transactions/', {
+            await axios.post(`${API_URL}/api/transactions/`, {
                 amount: amount,
                 description: description,
                 debtor: debtor,
@@ -113,7 +121,7 @@ function Dashboard({ handleLogout, token }) {
     const handleSearch = async () => {
         if (!searchQuery) return
         try {
-            const res = await axios.get(`http://127.0.0.1:8000/api/users/search/?query=${searchQuery}`)
+            const res = await axios.get(`${API_URL}/api/users/search/?query=${searchQuery}`)
             setSearchResults(res.data)
         } catch (err) {
             console.error(err)
@@ -122,7 +130,7 @@ function Dashboard({ handleLogout, token }) {
 
     const sendRequest = async (targetUserId) => {
         try {
-            await axios.post('http://127.0.0.1:8000/api/friend-requests/', {
+            await axios.post(`${API_URL}/api/friend-requests/`, {
                 to_user: targetUserId
             })
             alert("Barátkérés elküldve!")
@@ -149,13 +157,13 @@ function Dashboard({ handleLogout, token }) {
             // Let's check FriendshipSerializer. If it uses `fields = '__all__'`, we need to provide both.
             // Or if we customized `perform_create`.
             // Let's try sending { user2: senderId } and assume backend handles it OR send both { user1: currentUser.id, user2: senderId }.
-            await axios.post('http://127.0.0.1:8000/api/friendships/', {
+            await axios.post(`${API_URL}/api/friendships/`, {
                 user1: currentUser.id,
                 user2: senderId
             })
 
             // 2. Delete Request
-            await axios.delete(`http://127.0.0.1:8000/api/friend-requests/${requestId}/`)
+            await axios.delete(`${API_URL}/api/friend-requests/${requestId}/`)
 
             alert("Barátság elfogadva!")
             fetchProtectedData()
@@ -167,7 +175,7 @@ function Dashboard({ handleLogout, token }) {
 
     const rejectRequest = async (requestId) => {
         try {
-            await axios.delete(`http://127.0.0.1:8000/api/friend-requests/${requestId}/`)
+            await axios.delete(`${API_URL}/api/friend-requests/${requestId}/`)
             alert("Kérés elutasítva.")
             fetchProtectedData()
         } catch (err) {
@@ -280,6 +288,14 @@ function Dashboard({ handleLogout, token }) {
                     <p className="text-gray-400 text-center italic">Nincs rögzített egyenleg.</p>
                 )}
             </div>
+
+            {/* Kategóriák */}
+            <Categories
+                categories={categories}
+                friendships={friendships}
+                currentUser={currentUser}
+                onRefresh={fetchProtectedData}
+            />
 
             {/* Új Tranzakció Űrlap */}
             <div className="bg-white p-6 rounded-2xl shadow-sm mb-6 border border-gray-100">

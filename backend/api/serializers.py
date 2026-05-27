@@ -28,7 +28,7 @@ class DebtCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DebtCategory
         fields = ['id', 'name', 'friendship', 'created_by', 'description', 'created_at', 'deleted_at']
-        read_only_fields = ['created_at', 'deleted_at']
+        read_only_fields = ['created_at', 'deleted_at', 'created_by']
 
 class TransactionSerializer(serializers.ModelSerializer):
     payer_name = serializers.ReadOnlyField(source='payer.username')
