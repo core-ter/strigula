@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { LoadingSpinner, ErrorBanner } from '../components/LoadingSpinner'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -13,6 +14,8 @@ function Friends() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [showSearch, setShowSearch] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -23,21 +26,24 @@ function Friends() {
   }, [])
 
   const fetchData = () => {
-    axios.get(`${API_URL}/auth/users/me/`)
-      .then(res => setCurrentUser(res.data))
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/users/friends/`)
-      .then(res => setFriends(res.data))
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/friend-requests/`)
-      .then(res => setRequests(res.data.results))
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/transactions/`)
-      .then(res => setTransactions(res.data.results))
-      .catch(err => console.error(err))
+    setError(null)
+    Promise.all([
+      axios.get(`${API_URL}/auth/users/me/`),
+      axios.get(`${API_URL}/api/users/friends/`),
+      axios.get(`${API_URL}/api/friend-requests/`),
+      axios.get(`${API_URL}/api/transactions/`)
+    ])
+      .then(([meRes, friendsRes, requestsRes, txRes]) => {
+        setCurrentUser(meRes.data)
+        setFriends(friendsRes.data)
+        setRequests(requestsRes.data.results)
+        setTransactions(txRes.data.results)
+      })
+      .catch(err => {
+        console.error(err)
+        setError('Nem sikerült betölteni az adatokat.')
+      })
+      .finally(() => setLoading(false))
   }
 
   const incomingRequests = requests.filter(req => req.to_user === currentUser?.id)
@@ -53,6 +59,17 @@ function Friends() {
       }
     })
     return bal
+  }, [transactions, currentUser])
+
+  const { totalPaidByMe, totalPaidToMe, netBalance } = useMemo(() => {
+    if (!currentUser) return { totalPaidByMe: 0, totalPaidToMe: 0, netBalance: 0 }
+    let paid = 0
+    let received = 0
+    transactions.forEach(tx => {
+      if (tx.payer === currentUser.id) paid += parseFloat(tx.amount)
+      if (tx.debtor === currentUser.id) received += parseFloat(tx.amount)
+    })
+    return { totalPaidByMe: paid, totalPaidToMe: received, netBalance: paid - received }
   }, [transactions, currentUser])
 
   const handleSearch = async () => {
@@ -100,7 +117,44 @@ function Friends() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 md:px-8">
+      {loading && <LoadingSpinner text="Adatok betöltése..." />}
+
+      {error && !loading && (
+        <ErrorBanner message={error} onRetry={() => { setLoading(true); fetchData() }} />
+      )}
+
+      {!loading && !error && (
+        <>
+      {/* Global Statistics Header */}
+      <div className="text-center mb-6">
+        <p className="text-xs font-medium text-gray-400 tracking-widest uppercase">Teljes egyenleg</p>
+        <p className={`text-4xl sm:text-5xl font-black tracking-tight mt-1 ${
+          netBalance > 0 ? 'text-green-600' : netBalance < 0 ? 'text-red-500' : 'text-gray-800'
+        }`}>
+          {netBalance >= 0 ? '+' : '-'}{Math.abs(netBalance).toLocaleString()}
+          <span className="text-2xl sm:text-3xl font-bold text-gray-400 ml-1">Ft</span>
+        </p>
+      </div>
+
+      {/* Split Stats Card */}
+      <div className="bg-white rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden mb-8 flex divide-x divide-gray-100">
+        <div className="flex-1 p-5 sm:p-6">
+          <p className="text-xs font-medium text-gray-400 mb-1.5">Kiadásaid</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-green-600 tracking-tight">
+            {totalPaidByMe.toLocaleString()}
+            <span className="text-sm font-semibold text-green-400 ml-1">Ft</span>
+          </p>
+        </div>
+        <div className="flex-1 p-5 sm:p-6">
+          <p className="text-xs font-medium text-gray-400 mb-1.5">Neked fizettek</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-red-500 tracking-tight">
+            {totalPaidToMe.toLocaleString()}
+            <span className="text-sm font-semibold text-red-400 ml-1">Ft</span>
+          </p>
+        </div>
+      </div>
+
       {/* Incoming Friend Requests */}
       {incomingRequests.length > 0 && (
         <div className="mb-6 bg-orange-50 border border-orange-200 rounded-2xl p-5">
@@ -234,6 +288,8 @@ function Friends() {
           <p className="text-gray-400 font-medium">Még nincsenek barátaid</p>
           <p className="text-gray-300 text-sm mt-1">Keress és jelölj be valakit a fenti gombbal!</p>
         </div>
+      )}
+        </>
       )}
     </div>
   )

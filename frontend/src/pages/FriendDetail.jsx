@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { LoadingSpinner, ErrorBanner } from '../components/LoadingSpinner'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -21,6 +22,9 @@ function FriendDetail() {
   // Transaction form per category
   const [txAmounts, setTxAmounts] = useState({})
   const [txDescriptions, setTxDescriptions] = useState({})
+  const [txTypes, setTxTypes] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -31,28 +35,27 @@ function FriendDetail() {
   }, [friendId])
 
   const fetchData = () => {
-    axios.get(`${API_URL}/auth/users/me/`)
-      .then(res => setCurrentUser(res.data))
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/users/friends/`)
-      .then(res => {
-        const found = res.data.find(u => u.id === parseInt(friendId))
+    setError(null)
+    Promise.all([
+      axios.get(`${API_URL}/auth/users/me/`),
+      axios.get(`${API_URL}/api/users/friends/`),
+      axios.get(`${API_URL}/api/friendships/`),
+      axios.get(`${API_URL}/api/debt-categories/`),
+      axios.get(`${API_URL}/api/transactions/`)
+    ])
+      .then(([meRes, friendsRes, fsRes, catRes, txRes]) => {
+        setCurrentUser(meRes.data)
+        const found = friendsRes.data.find(u => u.id === parseInt(friendId))
         setFriend(found || null)
+        setFriendships(fsRes.data.results)
+        setCategories(catRes.data.results)
+        setTransactions(txRes.data.results)
       })
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/friendships/`)
-      .then(res => setFriendships(res.data.results))
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/debt-categories/`)
-      .then(res => setCategories(res.data.results))
-      .catch(err => console.error(err))
-
-    axios.get(`${API_URL}/api/transactions/`)
-      .then(res => setTransactions(res.data.results))
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error(err)
+        setError('Nem sikerült betölteni az adatokat.')
+      })
+      .finally(() => setLoading(false))
   }
 
   const friendshipId = useMemo(() => {
@@ -89,6 +92,18 @@ function FriendDetail() {
     return bal
   }, [filteredTransactions, currentUser])
 
+  const totalIPaid = useMemo(() => {
+    return filteredTransactions
+      .filter(tx => tx.payer === currentUser?.id)
+      .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  }, [filteredTransactions, currentUser])
+
+  const totalFriendPaid = useMemo(() => {
+    return filteredTransactions
+      .filter(tx => tx.debtor === currentUser?.id)
+      .reduce((sum, tx) => sum + parseFloat(tx.amount), 0)
+  }, [filteredTransactions, currentUser])
+
   const toggleCategory = (catId) => {
     setOpenCategories(prev => ({ ...prev, [catId]: !prev[catId] }))
   }
@@ -115,6 +130,7 @@ function FriendDetail() {
     e.preventDefault()
     const amount = txAmounts[categoryId] || ''
     const description = txDescriptions[categoryId] || ''
+    const txType = txTypes[categoryId] || 'expense'
     if (!amount) {
       alert('Add meg az összeget!')
       return
@@ -124,12 +140,13 @@ function FriendDetail() {
         amount: amount,
         debtor: parseInt(friendId),
         category: categoryId,
-        type: 'expense',
+        type: txType,
         currency: 'HUF',
         description: description
       })
       setTxAmounts(prev => ({ ...prev, [categoryId]: '' }))
       setTxDescriptions(prev => ({ ...prev, [categoryId]: '' }))
+      setLoading(true)
       fetchData()
     } catch (err) {
       console.error(err)
@@ -137,24 +154,53 @@ function FriendDetail() {
     }
   }
 
+  const handleDeleteTransaction = async (txId) => {
+    if (!confirm('Biztosan törlöd ezt a tranzakciót?')) return
+    try {
+      await axios.delete(`${API_URL}/api/transactions/${txId}/`)
+      setLoading(true)
+      fetchData()
+    } catch (err) {
+      console.error(err)
+      alert('Hiba a törléskor!')
+    }
+  }
+
+  const handleUnfriend = async () => {
+    if (!friendshipId) return
+    if (!confirm('Biztosan törlöd ezt a barátot? Minden közös tranzakció megmarad.')) return
+    try {
+      await axios.delete(`${API_URL}/api/friendships/${friendshipId}/`)
+      navigate('/dashboard')
+    } catch (err) {
+      console.error(err)
+      alert('Hiba a barát törlésekor!')
+    }
+  }
+
   const getTransactionsForCategory = (catId) => {
     return filteredTransactions.filter(tx => tx.category === catId)
   }
 
-  if (!friend) {
+  if (!friend && !loading && !error) {
     return (
-      <div className="text-center py-16">
-        <p className="text-gray-400">Barát betöltése...</p>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 text-center py-16">
+        <p className="text-gray-400">Ez a barát nem található.</p>
       </div>
     )
   }
 
   const totalTxCount = filteredTransactions.length
-  const absBalance = Math.abs(balance)
-  const maxBal = Math.max(absBalance, 1000) // minimum bar width for visual
+  const maxSideAmount = Math.max(totalIPaid, totalFriendPaid, 1)
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 md:px-8">
+      {loading && <LoadingSpinner text="Adatok betöltése..." />}
+      {error && !loading && (
+        <ErrorBanner message={error} onRetry={() => { setLoading(true); fetchData() }} />
+      )}
+      {!loading && !error && friend && (
+        <>
       {/* Back Button */}
       <button
         onClick={() => navigate('/dashboard')}
@@ -168,50 +214,58 @@ function FriendDetail() {
 
       {/* Friend Header */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-1">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
             {friend.username.charAt(0).toUpperCase()}
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl font-extrabold text-gray-900">{friend.username}</h1>
             <p className="text-sm text-gray-400">{totalTxCount} tranzakció</p>
           </div>
+          <button
+            onClick={handleUnfriend}
+            className="text-xs font-medium text-gray-400 hover:text-red-500 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0"
+          >
+            Barát törlése
+          </button>
         </div>
 
-        {/* Visual Balance Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm font-medium">
-            <span className={balance >= 0 ? 'text-green-600' : 'text-gray-400'}>
-              Tartozik neked
-            </span>
-            <span className={balance < 0 ? 'text-red-500' : 'text-gray-400'}>
-              Tartozol neki
-            </span>
+        {/* Two-Way Balance Bar */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-end px-1">
+            <div className={`text-right ${totalFriendPaid > 0 ? 'text-red-500' : 'text-gray-300'}`}>
+              <p className="text-xs font-medium">Tartozol</p>
+              <p className="text-sm font-bold">{totalFriendPaid.toLocaleString()} Ft</p>
+            </div>
+            <div className={`text-left ${totalIPaid > 0 ? 'text-green-600' : 'text-gray-300'}`}>
+              <p className="text-xs font-medium">Tartozik</p>
+              <p className="text-sm font-bold">{totalIPaid.toLocaleString()} Ft</p>
+            </div>
           </div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden flex">
-            {balance > 0 && (
+
+          <div className="h-4 bg-gray-100 rounded-full overflow-hidden flex">
+            <div className="w-1/2 flex justify-end">
               <div
-                className="h-full bg-green-500 rounded-full transition-all"
-                style={{ width: `${Math.min((balance / maxBal) * 100, 100)}%`, marginLeft: 'auto' }}
+                className="h-full bg-red-500 rounded-l-full transition-all duration-300"
+                style={{ width: `${Math.min((totalFriendPaid / maxSideAmount) * 100, 100)}%` }}
               />
-            )}
-            {balance < 0 && (
+            </div>
+            <div className="w-0.5 bg-white shrink-0" />
+            <div className="w-1/2 flex justify-start">
               <div
-                className="h-full bg-red-500 rounded-full transition-all"
-                style={{ width: `${Math.min((absBalance / maxBal) * 100, 100)}%` }}
+                className="h-full bg-green-500 rounded-r-full transition-all duration-300"
+                style={{ width: `${Math.min((totalIPaid / maxSideAmount) * 100, 100)}%` }}
               />
-            )}
-            {balance === 0 && (
-              <div className="h-full w-2 bg-gray-300 rounded-full mx-auto" />
-            )}
+            </div>
           </div>
+
           <p className={`text-center font-bold text-lg ${
             balance > 0 ? 'text-green-600' : balance < 0 ? 'text-red-500' : 'text-gray-500'
           }`}>
             {balance > 0
-              ? `+${balance.toLocaleString()} Ft`
+              ? `Tartozik neked: +${balance.toLocaleString()} Ft`
               : balance < 0
-              ? `-${absBalance.toLocaleString()} Ft`
+              ? `Tartozol neki: -${Math.abs(balance).toLocaleString()} Ft`
               : 'Rendezve ✓'}
           </p>
         </div>
@@ -236,7 +290,7 @@ function FriendDetail() {
         {/* New Category Form */}
         {showCategoryForm && (
           <form onSubmit={handleCreateCategory} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 placeholder="Kategória neve (pl. kaja, rezsi)..."
@@ -247,7 +301,7 @@ function FriendDetail() {
               />
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shrink-0"
+                className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3.5 rounded-xl text-sm font-semibold active:bg-blue-800 transition-colors"
               >
                 Mentés
               </button>
@@ -272,7 +326,9 @@ function FriendDetail() {
                     {cat.description && (
                       <p className="text-xs text-gray-400 mt-0.5">{cat.description}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1">{catTxs.length} tranzakció</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {catTxs.length} tranzakció — összesen {catTxs.reduce((s, tx) => s + parseFloat(tx.amount), 0).toLocaleString()} Ft
+                    </p>
                   </div>
                   <svg
                     className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -305,9 +361,19 @@ function FriendDetail() {
                                   <p className="text-xs text-gray-500 mt-0.5">{tx.description}</p>
                                 )}
                               </div>
-                              <p className={`text-sm font-bold ${isCredit ? 'text-green-600' : 'text-red-500'}`}>
-                                {isCredit ? '+' : '-'}{parseFloat(tx.amount).toLocaleString()} Ft
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-sm font-bold ${isCredit ? 'text-green-600' : 'text-red-500'}`}>
+                                  {isCredit ? '+' : '-'}{parseFloat(tx.amount).toLocaleString()} Ft
+                                </p>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleDeleteTransaction(tx.id) }}
+                                  className="text-gray-300 hover:text-red-500 transition-colors p-1"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
                             </li>
                           )
                         })}
@@ -321,14 +387,39 @@ function FriendDetail() {
                       onSubmit={(e) => handleCreateTransaction(e, cat.id)}
                       className="mt-4 bg-gray-50 rounded-xl p-4 space-y-3"
                     >
-                      <div className="flex gap-2">
+                      {/* Type Toggle */}
+                      <div className="flex bg-white rounded-xl border border-gray-200 p-1 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setTxTypes(prev => ({ ...prev, [cat.id]: 'expense' }))}
+                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors ${
+                            (txTypes[cat.id] || 'expense') === 'expense'
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Új vásárlás
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTxTypes(prev => ({ ...prev, [cat.id]: 'repayment' }))}
+                          className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors ${
+                            txTypes[cat.id] === 'repayment'
+                              ? 'bg-green-600 text-white shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Kifizetés
+                        </button>
+                      </div>
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           type="number"
                           min="1"
                           placeholder="Összeg"
                           value={txAmounts[cat.id] || ''}
                           onChange={e => setTxAmounts(prev => ({ ...prev, [cat.id]: e.target.value }))}
-                          className="w-24 bg-white border border-gray-200 rounded-xl px-3 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="sm:w-28 w-full bg-white border border-gray-200 rounded-xl px-3 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
                           required
                         />
                         <input
@@ -340,9 +431,9 @@ function FriendDetail() {
                         />
                         <button
                           type="submit"
-                          className="bg-blue-600 text-white px-4 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shrink-0"
+                          className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3.5 rounded-xl text-sm font-semibold active:bg-blue-800 transition-colors"
                         >
-                          +
+                          Hozzáadás
                         </button>
                       </div>
                     </form>
@@ -358,6 +449,8 @@ function FriendDetail() {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   )
 }
