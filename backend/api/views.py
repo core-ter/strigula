@@ -1,6 +1,9 @@
+import csv
+import io
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.http import HttpResponse
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -228,3 +231,31 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.deleted_at = timezone.now()
         instance.save()
+
+    @action(detail=False, methods=['get'])
+    def export_csv(self, request):
+        user = request.user
+        transactions = self.get_queryset().select_related('category', 'payer', 'debtor').order_by('-created_at')
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        writer.writerow(['ID', 'Típus', 'Fizető', 'Adós', 'Kategória', 'Összeg', 'Pénznem', 'Leírás', 'Létrehozva'])
+
+        for t in transactions:
+            writer.writerow([
+                t.id,
+                'Kiadás' if t.type == 'expense' else 'Visszafizetés',
+                t.payer.username if t.payer else '',
+                t.debtor.username if t.debtor else '',
+                t.category.name if t.category else '',
+                str(t.amount),
+                t.currency,
+                t.description,
+                t.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            ])
+
+        csv_body = '\uFEFF' + output.getvalue()
+        response = HttpResponse(csv_body, content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="tranzakciok.csv"'
+        return response

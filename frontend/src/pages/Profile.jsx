@@ -18,6 +18,7 @@ function Profile() {
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const { dark, toggleDark } = useTheme()
 
   useEffect(() => {
@@ -81,6 +82,28 @@ function Profile() {
       toast(msg, 'error')
     } finally {
       setChangingPassword(false)
+    }
+  }
+
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const response = await axios.get(`${API_URL}/api/transactions/export_csv/`, {
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'tranzakciok.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+      toast('Adatok exportálva!', 'success')
+    } catch {
+      toast('Hiba az exportálás során.', 'error')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -179,6 +202,31 @@ function Profile() {
                 dark ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 sm:p-6 mb-6">
+        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-5">Adatok exportálása</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-100 dark:bg-green-900/50">
+              <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">CSV formátum</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Tranzakciók letöltése táblázatkezelőbe</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            disabled={exporting}
+            className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 active:bg-green-800 transition-colors disabled:opacity-50"
+          >
+            {exporting ? 'Exportálás...' : 'Letöltés'}
           </button>
         </div>
       </div>
