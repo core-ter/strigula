@@ -11,8 +11,8 @@ Track shared expenses, know who owes whom, and settle up — effortlessly.
 </p>
 
 <p align="center">
-  <img src="images/image1.png" width="280" alt="Strigula dashboard" />
-  <img src="images/image2.png" width="280" alt="Strigula transactions" />
+  <img src="images/image1.png" width="220" alt="Strigula dashboard" />
+  <img src="images/image2.png" width="220" alt="Strigula transactions" />
 </p>
 
 ## Core Features
